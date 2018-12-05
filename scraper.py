@@ -3,21 +3,39 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-import parser
+from parser import Parser
 
-driver = webdriver.Chrome('/Users/roybroertjes/Desktop/scraper/chromedriver')
+urls = {
+    'ah': 'https://www.ah.nl/bonus',
+    'jumbo': 'https://www.jumbo.com/aanbiedingen'
+}
 
-# load URL
-url = 'https://www.ah.nl/bonus'
-driver.get(url)
+products = {
+    'ah': 'product',
+    'jumbo': 'jum-item-promotion'
+}
 
-# Wait till bonus is rendered
-try:
-    element = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "product")))
-finally:
-    products = driver.find_elements(By.CLASS_NAME, 'product')
+class Scraper:
+    def __init__(self, supermarket):
+        self.supermarket = supermarket
+        self.url = urls[supermarket]
+        self.driver = webdriver.Chrome('./chromedriver')
 
-productsParsed = parser.parse(products)
-for product in productsParsed:
-    print product
+    def start(self):
+        self.driver.get(self.url)
+
+        # wait till deals are rendered by JS
+        try:
+            WebDriverWait(self.driver, 1000).until(EC.presence_of_element_located((By.CLASS_NAME, products[self.supermarket])))
+        finally:
+            # TODO: preprocessing (for "Jumbo" trigger scroll loading for example)
+
+            # find deals
+            deals = self.driver.find_elements(By.CLASS_NAME, products[self.supermarket])
+
+            # parse deals
+            parser = Parser(self.supermarket)
+            parser.parse(deals)
+
+            # print deals
+            parser.printDeals()
