@@ -55,7 +55,17 @@ selectors = {
             'selector': '.jum-mediumbadge img',
             'attribute': 'alt'
         }
-    }
+    },
+    # 'image': {
+    #     'ah': {
+    #         'selector': '.product-image-container .image-container img.product-image',
+    #         'attribute': 'src'
+    #     },
+    #     'jumbo': {
+    #         'selector': 'dd.jum-item-figure img',
+    #         'attribute': 'src',
+    #     }
+    # }
 }
 
 # information that should be present inside a deal to make it a valid deal
@@ -89,7 +99,8 @@ class Parser:
             { 'key' : 'priceTo', 'label' : 'Prijs (naar)' },
             { 'key' : 'description', 'label' : 'Beschrijving' },
             { 'key' : 'discountTag', 'label' : 'Soort korting' },
-            { 'key' : 'validUntil', 'label' : 'Korting loopt tot' }
+            { 'key' : 'validUntil', 'label' : 'Korting loopt tot' },
+            { 'key' : 'image', 'label' : 'Productfoto' }
         ]
 
         for deal in self.deals:
@@ -126,6 +137,7 @@ class Parser:
                 attribute += clean_html(element.get_attribute(selectors[property][self.supermarket]['attribute']).encode('utf-8'))
 
             deal[property] = attribute
+            print deal['name']
 
         deal['supermarket'] = self.supermarket
         deal['validUntil'] = self.validUntil

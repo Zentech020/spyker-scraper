@@ -47,7 +47,7 @@ class Scraper:
             # self.parser.printDeals()
 
     def export(self):
-        keys = ['name', 'supermarket', 'priceFrom', 'priceTo', 'description', 'discountTag', 'validUntil']
+        keys = ['name', 'supermarket', 'priceFrom', 'priceTo', 'description', 'discountTag', 'image', 'validUntil']
         week = str(datetime.now().isocalendar()[1])
 
         with open('deals/week' + week + '-' + self.supermarket + '.csv', 'wb') as output:
