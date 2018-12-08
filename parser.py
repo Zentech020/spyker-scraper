@@ -1,5 +1,8 @@
 from selenium.webdriver.common.by import By
 
+from datetime import datetime
+import re
+
 # selectors to use to find properties about a deal, such as:
 #   - name, priceFrom, priceTo, description & image
 selectors = {
@@ -59,12 +62,15 @@ selectors = {
 requiredProperties = ['name', 'priceFrom', 'priceTo']
 
 class Parser:
-    def __init__(self, supermarket):
+    def __init__(self, driver, supermarket):
+        self.driver = driver
         self.supermarket = supermarket
         self.deals = []
+        self.validUntil = ''
 
     def parse(self, deals):
-        return [self.parseDeal(deal) for i, deal in enumerate(deals)]
+        self.validUntil = self.__parseValidUntil()
+        self.deals = [self.parseDeal(deal) for i, deal in enumerate(deals)]
 
     def parseDeal(self, deal):
         elements = self.__findElements(deal)
@@ -74,16 +80,22 @@ class Parser:
             return
 
         # get all content for each element inside deal
-        self.deals.append(self.__getAttributes(elements))
+        return self.__getAttributes(elements)
 
     def printDeals(self):
+        printableFields = [
+            { 'key' : 'name', 'label' : 'Naam' },
+            { 'key' : 'priceFrom', 'label' : 'Prijs (van)' },
+            { 'key' : 'priceTo', 'label' : 'Prijs (naar)' },
+            { 'key' : 'description', 'label' : 'Beschrijving' },
+            { 'key' : 'discountTag', 'label' : 'Soort korting' },
+            { 'key' : 'validUntil', 'label' : 'Korting loopt tot' }
+        ]
+
         for deal in self.deals:
-            print("\n")
-            print 'Naam: ', deal['name']
-            print 'Prijs (van): ', deal['priceFrom']
-            print 'Prijs (naar): ', deal['priceTo']
-            print 'Beschrijving: ', deal['description']
-            print 'Soort korting: ', deal['discountTag']
+            print('\n')
+            for field in printableFields:
+                print field['label'], ': ', deal[field['key']]
 
     def __findElements(self, deal):
         elements = {}
@@ -111,8 +123,41 @@ class Parser:
             attribute = ''
 
             for element in deal[property]:
-                attribute += element.get_attribute(selectors[property][self.supermarket]['attribute']).encode('utf-8')
+                attribute += clean_html(element.get_attribute(selectors[property][self.supermarket]['attribute']).encode('utf-8'))
 
             deal[property] = attribute
 
+        deal['supermarket'] = self.supermarket
+        deal['validUntil'] = self.validUntil
+
         return deal
+
+    def __parseValidUntil(self):
+        switcher = {
+            'ah' : self.__parseValidUntilAH,
+            'jumbo' : self.__parseValidUntilJumbo
+        }
+
+        parser =  switcher.get(self.supermarket, lambda: 'Invalid supermarket!')
+        validUntil = parser()
+
+        print validUntil
+        return validUntil
+
+    def __parseValidUntilAH(self):
+        return '12-07'
+
+    def __parseValidUntilJumbo(self):
+        try:
+            dateString = self.driver.find_element(By.CSS_SELECTOR, '.jumbo-lister-navigation-tabs li').get_attribute('innerHTML').split()[-1]
+            date = datetime.strptime(dateString + '-2018', '%d-%m-%Y')
+
+            return date
+        except:
+            pass
+
+
+def clean_html(html):
+    cleanr = re.compile('<.*?>')
+
+    return re.sub(cleanr, ' ', html)
